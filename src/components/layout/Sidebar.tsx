@@ -10,6 +10,7 @@ import {
   Settings,
   Globe,
   Radio,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -26,7 +27,7 @@ const adminItems = [
 ];
 
 export function Sidebar() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: () => apiFetch<SettingsResponse>('/api/settings'),
@@ -34,58 +35,88 @@ export function Sidebar() {
   });
   const isAdmin = settings?.profile.role === 'ADMIN';
 
+  const initials = (settings?.profile.name || settings?.profile.email || 'U')
+    .split(/\s|@/)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join('');
+
   return (
-    <aside className="flex h-full w-60 flex-col border-r border-border bg-card">
-      <div className="flex h-14 items-center border-b border-border px-4">
-        <span className="text-lg font-semibold text-foreground">Enrichment</span>
+    <aside className="flex h-full w-64 flex-col border-r border-border bg-card/30 backdrop-blur-xl">
+      {/* Branding */}
+      <div className="flex h-16 items-center gap-3 border-b border-border px-5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
+          <Sparkles className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-foreground tracking-tight">Enrichment</div>
+          <div className="text-xs text-muted-foreground">AI Classification</div>
+        </div>
       </div>
 
-      <nav className="flex-1 space-y-1 px-2 py-4">
+      {/* Nav */}
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <div className="mb-1 px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          Workspace
+        </div>
         {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-              )
-            }
-          >
-            <item.icon className="h-4 w-4" />
-            {item.label}
-          </NavLink>
+          <NavItem key={item.to} {...item} />
         ))}
 
-        {/* Admin section — only visible to admins */}
         {isAdmin && (
           <>
-        <div className="my-4 border-t border-border" />
-        <div className="px-3 py-1 text-xs font-medium uppercase text-muted-foreground">
-          Admin
-        </div>
-        {adminItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-              )
-            }
-          >
-            <item.icon className="h-4 w-4" />
-            {item.label}
-          </NavLink>
-        ))}
+            <div className="mt-6 mb-1 px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Admin
+            </div>
+            {adminItems.map((item) => (
+              <NavItem key={item.to} {...item} />
+            ))}
           </>
         )}
       </nav>
+
+      {/* User card */}
+      <div className="border-t border-border p-3">
+        <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/80 to-purple-600/80 text-xs font-semibold text-white shadow-sm">
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-medium text-foreground">
+              {settings?.profile.name || user?.email?.split('@')[0]}
+            </div>
+            <div className="truncate text-xs text-muted-foreground">
+              {user?.email}
+            </div>
+          </div>
+        </div>
+      </div>
     </aside>
+  );
+}
+
+function NavItem({ to, label, icon: Icon }: { to: string; label: string; icon: any }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        cn(
+          'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
+          isActive
+            ? 'bg-primary/10 text-foreground'
+            : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+          )}
+          <Icon className={cn('h-[18px] w-[18px] transition-colors', isActive ? 'text-primary' : '')} />
+          <span>{label}</span>
+        </>
+      )}
+    </NavLink>
   );
 }

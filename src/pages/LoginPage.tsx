@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { Sparkles, Loader2 } from 'lucide-react';
 
 export function LoginPage() {
   const { isAuthenticated } = useAuth();
@@ -21,9 +22,7 @@ export function LoginPage() {
     setLoading(true);
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-    }
+    if (error) setError(error.message);
     setLoading(false);
   }
 
@@ -42,77 +41,90 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-sm space-y-6 px-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">Sign in</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Enter your credentials to access your account
-          </p>
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md animate-in">
+        {/* Branding */}
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
+            <Sparkles className="h-6 w-6 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back</h1>
+          <p className="text-sm text-muted-foreground">Sign in to your enrichment workspace</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
+        {/* Card */}
+        <div className="card p-7 shadow-xl shadow-black/20">
+          <form onSubmit={handleLogin} className="space-y-5">
+            {error && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-sm text-destructive animate-in">
+                {error}
+              </div>
+            )}
+            {resetSent && (
+              <div className="rounded-lg bg-primary/10 border border-primary/20 px-3 py-2.5 text-sm text-primary animate-in">
+                Password reset link sent. Check your inbox.
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="input"
+                placeholder="you@company.com"
+                autoComplete="email"
+              />
             </div>
-          )}
 
-          {resetSent && (
-            <div className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
-              Password reset link sent. Check your inbox.
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="input"
+                autoComplete="current-password"
+              />
             </div>
-          )}
 
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-foreground">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="you@example.com"
-            />
-          </div>
+            <button type="submit" disabled={loading} className="btn-primary btn-md w-full">
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
+            </button>
+          </form>
+        </div>
 
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-foreground">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-
-        <div className="flex items-center justify-between text-sm">
-          <button
-            onClick={handleResetPassword}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            Forgot password?
-          </button>
-          <Link to="/signup" className="text-muted-foreground hover:text-foreground">
-            Create account
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Don't have an account?{' '}
+          <Link to="/signup" className="font-medium text-foreground hover:text-primary transition-colors">
+            Create one
           </Link>
-        </div>
+        </p>
       </div>
     </div>
   );

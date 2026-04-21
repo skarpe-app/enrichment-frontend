@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api';
 import type { CreateRunRequest, SettingsResponse } from '@/types/api';
-import { X } from 'lucide-react';
+import { X, Loader2, Sparkles, Globe, Settings as SettingsIcon, Zap } from 'lucide-react';
 
 interface RunConfigModalProps {
   listId: string;
@@ -11,7 +11,7 @@ interface RunConfigModalProps {
   isSubmitting: boolean;
 }
 
-export function RunConfigModal({ listId, onClose, onSubmit, isSubmitting }: RunConfigModalProps) {
+export function RunConfigModal({ onClose, onSubmit, isSubmitting }: RunConfigModalProps) {
   const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: () => apiFetch<SettingsResponse>('/api/settings'),
@@ -22,7 +22,6 @@ export function RunConfigModal({ listId, onClose, onSubmit, isSubmitting }: RunC
     queryFn: () => apiFetch<{ models: Array<{ id: string; name: string }> }>('/api/settings/models/openai'),
   });
 
-  // Form state
   const [domainResolutionMode, setDomainResolutionMode] = useState<'email_only' | 'website_only' | 'combined'>('combined');
   const [combinedPriority, setCombinedPriority] = useState<'email_first' | 'website_first'>('email_first');
   const [aiModel, setAiModel] = useState('gpt-4.1-mini');
@@ -33,11 +32,8 @@ export function RunConfigModal({ listId, onClose, onSubmit, isSubmitting }: RunC
   const [forceRescrape, setForceRescrape] = useState(false);
   const [domainCacheTtlDays, setDomainCacheTtlDays] = useState(30);
 
-  // Pre-fill TTL from profile
   useEffect(() => {
-    if (settings?.profile.domainCacheTtlDays) {
-      setDomainCacheTtlDays(settings.profile.domainCacheTtlDays);
-    }
+    if (settings?.profile.domainCacheTtlDays) setDomainCacheTtlDays(settings.profile.domainCacheTtlDays);
   }, [settings]);
 
   const hasUserCredential = (settings?.aiCredentials.length ?? 0) > 0;
@@ -52,13 +48,12 @@ export function RunConfigModal({ listId, onClose, onSubmit, isSubmitting }: RunC
       ...(promptSource === 'stored' ? { promptId } : {}),
       ...(promptSource === 'text' ? { promptText } : {}),
       billingSource,
-      // Auto-select default credential per §13 when user_credential
       ...(billingSource === 'user_credential' ? {
         aiCredentialId: settings?.aiCredentials.find((c) => c.isDefault)?.id,
       } : {}),
       forceRescrape,
       domainCacheTtlDays,
-      scopeType: 'all', // Default: enrich all contacts
+      scopeType: 'all',
     };
 
     if (billingSource === 'user_credential' && !config.aiCredentialId) {
@@ -70,120 +65,149 @@ export function RunConfigModal({ listId, onClose, onSubmit, isSubmitting }: RunC
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg rounded-lg border border-border bg-card p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-foreground">Start Enrichment Run</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+      <div className="w-full max-w-xl card shadow-2xl shadow-black/30 max-h-[90vh] overflow-y-auto animate-in">
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 backdrop-blur-xl px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Start Enrichment</h2>
+              <p className="text-xs text-muted-foreground">Configure the AI enrichment run</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="btn-ghost btn-sm"><X className="h-4 w-4" /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Domain Source */}
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Domain Source</legend>
-            <div className="space-y-1.5">
+          <Section icon={Globe} title="Domain Source" description="Where to find the company to classify">
+            <div className="space-y-2">
               {[
                 { value: 'email_only', label: 'Email Domain', desc: 'Use email domain, ignore website' },
                 { value: 'website_only', label: 'Website Column', desc: 'Use website URL, skip if empty' },
                 { value: 'combined', label: 'Combined', desc: 'Try one first, fallback to other' },
               ].map((opt) => (
-                <label key={opt.value} className="flex items-start gap-2 cursor-pointer">
+                <label key={opt.value}
+                  className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                    domainResolutionMode === opt.value
+                      ? 'border-primary/50 bg-primary/5'
+                      : 'border-border hover:bg-accent/30'
+                  }`}>
                   <input type="radio" name="domainMode" value={opt.value} checked={domainResolutionMode === opt.value}
-                    onChange={() => setDomainResolutionMode(opt.value as any)}
-                    className="mt-1" />
+                    onChange={() => setDomainResolutionMode(opt.value as any)} className="mt-0.5 accent-primary" />
                   <div>
-                    <span className="text-sm text-foreground">{opt.label}</span>
-                    <span className="text-xs text-muted-foreground ml-2">{opt.desc}</span>
+                    <div className="text-sm font-medium text-foreground">{opt.label}</div>
+                    <div className="text-xs text-muted-foreground">{opt.desc}</div>
                   </div>
                 </label>
               ))}
             </div>
             {domainResolutionMode === 'combined' && (
-              <select value={combinedPriority} onChange={(e) => setCombinedPriority(e.target.value as any)}
-                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground ml-6">
-                <option value="email_first">Email First</option>
-                <option value="website_first">Website First</option>
-              </select>
+              <div className="mt-3 flex items-center gap-3 ml-6 animate-in">
+                <label className="text-sm text-muted-foreground">Priority:</label>
+                <select value={combinedPriority} onChange={(e) => setCombinedPriority(e.target.value as any)} className="input input-sm max-w-48">
+                  <option value="email_first">Email first</option>
+                  <option value="website_first">Website first</option>
+                </select>
+              </div>
             )}
-          </fieldset>
+          </Section>
 
           {/* AI Settings */}
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium text-muted-foreground uppercase tracking-wide">AI Settings</legend>
+          <Section icon={Sparkles} title="AI Model & Prompt" description="How to classify each domain">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground">Model</label>
-                <select value={aiModel} onChange={(e) => setAiModel(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground">
+                <label className="text-xs font-medium text-muted-foreground">Model</label>
+                <select value={aiModel} onChange={(e) => setAiModel(e.target.value)} className="input mt-1">
                   {(modelsData?.models ?? []).map((m) => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">API Key</label>
-                <select value={billingSource} onChange={(e) => setBillingSource(e.target.value as any)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground">
-                  <option value="system_default">Company Default</option>
-                  {hasUserCredential && <option value="user_credential">My API Key</option>}
+                <label className="text-xs font-medium text-muted-foreground">API Key</label>
+                <select value={billingSource} onChange={(e) => setBillingSource(e.target.value as any)} className="input mt-1">
+                  <option value="system_default">Company default</option>
+                  {hasUserCredential && <option value="user_credential">My API key</option>}
                 </select>
               </div>
             </div>
 
-            <div>
-              <label className="text-xs text-muted-foreground">Prompt</label>
-              <div className="flex gap-3 mt-1">
+            <div className="mt-3">
+              <label className="text-xs font-medium text-muted-foreground">Prompt</label>
+              <div className="mt-1.5 grid grid-cols-3 gap-2">
                 {(['default', 'stored', 'text'] as const).map((ps) => (
-                  <label key={ps} className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer">
+                  <label key={ps}
+                    className={`flex items-center justify-center gap-2 rounded-lg border p-2 cursor-pointer transition-colors text-sm ${
+                      promptSource === ps ? 'border-primary/50 bg-primary/5 text-foreground' : 'border-border text-muted-foreground hover:bg-accent/30'
+                    }`}>
                     <input type="radio" name="promptSource" value={ps} checked={promptSource === ps}
-                      onChange={() => setPromptSource(ps)} />
+                      onChange={() => setPromptSource(ps)} className="hidden" />
                     {ps === 'default' ? 'Default' : ps === 'stored' ? 'Stored ID' : 'Custom Text'}
                   </label>
                 ))}
               </div>
               {promptSource === 'stored' && (
-                <input value={promptId} onChange={(e) => setPromptId(e.target.value)}
-                  placeholder="Prompt ID (pmpt_...)" className="mt-2 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground" />
+                <input value={promptId} onChange={(e) => setPromptId(e.target.value)} placeholder="pmpt_xxx" className="input mt-2" />
               )}
               {promptSource === 'text' && (
                 <textarea value={promptText} onChange={(e) => setPromptText(e.target.value)}
-                  placeholder="Enter your classification prompt..." rows={3}
-                  className="mt-2 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground" />
+                  placeholder="Enter your classification prompt..." rows={4} className="input mt-2 font-mono text-xs" />
               )}
             </div>
-          </fieldset>
+          </Section>
 
           {/* Scrape Settings */}
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Scrape Settings</legend>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                <input type="checkbox" checked={forceRescrape} onChange={(e) => setForceRescrape(e.target.checked)} />
-                Force re-scrape (ignore cache)
-              </label>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-foreground">Cache TTL:</label>
+          <Section icon={SettingsIcon} title="Scrape Settings" description="Cache and re-scrape options">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={forceRescrape} onChange={(e) => setForceRescrape(e.target.checked)} className="accent-primary h-4 w-4" />
+              <div>
+                <div className="text-sm text-foreground">Force re-scrape</div>
+                <div className="text-xs text-muted-foreground">Ignore cache, fetch fresh website content</div>
+              </div>
+            </label>
+            <div className="flex items-center gap-3 mt-3">
+              <label className="text-sm text-muted-foreground">Cache TTL:</label>
               <input type="number" value={domainCacheTtlDays} min={1} max={365}
                 onChange={(e) => setDomainCacheTtlDays(parseInt(e.target.value) || 30)}
-                className="w-20 rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground" />
-              <span className="text-xs text-muted-foreground">days</span>
+                className="input input-sm max-w-20" />
+              <span className="text-xs text-muted-foreground">days (use cached data if newer than this)</span>
             </div>
-          </fieldset>
+          </Section>
 
           {/* Submit */}
-          <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={isSubmitting}
-              className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-              {isSubmitting ? 'Starting...' : 'Start Enrichment'}
+          <div className="flex items-center gap-3 pt-2 border-t border-border">
+            <button type="submit" disabled={isSubmitting} className="btn-primary btn-md flex-1">
+              {isSubmitting ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Starting...</>
+              ) : (
+                <><Zap className="h-4 w-4" /> Start Enrichment</>
+              )}
             </button>
-            <button type="button" onClick={onClose}
-              className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground">
-              Cancel
-            </button>
+            <button type="button" onClick={onClose} className="btn-outline btn-md">Cancel</button>
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+function Section({ icon: Icon, title, description, children }: {
+  icon: any; title: string; description: string; children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      {children}
     </div>
   );
 }
