@@ -1,6 +1,39 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Tailwind v4: map CSS variables to theme so `bg-background`, `text-foreground`, etc. work */
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+/* v4 compatibility: `border-border` default wasn't automatic in v4 — add back */
+@layer base {
+  *,
+  ::after,
+  ::before {
+    border-color: hsl(var(--border));
+  }
+}
 
 @layer base {
   :root {
@@ -37,10 +70,6 @@
     --ring: 152 72% 50%;
 
     --radius: 0.5rem;
-  }
-
-  * {
-    @apply border-border;
   }
 
   html {
@@ -88,30 +117,36 @@
 }
 
 @layer components {
-  .btn {
+  /* Shared button base styles (use as .btn.btn-primary etc.) */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline,
+  .btn-ghost,
+  .btn-destructive {
     @apply inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold
       transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70
       disabled:pointer-events-none disabled:opacity-45;
   }
 
   .btn-primary {
-    @apply btn border-primary/40 bg-primary text-primary-foreground hover:bg-primary/90;
+    @apply border-primary/40 bg-primary text-primary-foreground hover:bg-primary/90;
   }
 
   .btn-secondary {
-    @apply btn border-border bg-secondary text-secondary-foreground hover:bg-accent;
+    @apply border-border bg-secondary text-secondary-foreground hover:bg-accent;
   }
 
   .btn-outline {
-    @apply btn border-border bg-background text-foreground hover:border-primary/35 hover:bg-accent;
+    @apply border-border bg-background text-foreground hover:border-primary/35 hover:bg-accent;
   }
 
   .btn-ghost {
-    @apply btn border-transparent bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground;
+    @apply border-transparent bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground;
   }
 
   .btn-destructive {
-    @apply btn border-destructive/35 bg-destructive/10 text-destructive hover:bg-destructive/20;
+    @apply border-destructive/35 bg-destructive/10 text-destructive hover:bg-destructive/20;
   }
 
   .btn-sm {
@@ -208,32 +243,38 @@
     @apply inline-flex h-8 items-center gap-2 rounded-md border border-border bg-secondary px-3 text-xs font-semibold text-muted-foreground;
   }
 
-  .badge {
+  .badge,
+  .badge-success,
+  .badge-warning,
+  .badge-danger,
+  .badge-info,
+  .badge-neutral,
+  .badge-primary {
     @apply inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-black uppercase leading-none tracking-[0.16em];
   }
 
   .badge-success {
-    @apply badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400;
+    @apply border-emerald-500/30 bg-emerald-500/10 text-emerald-400;
   }
 
   .badge-warning {
-    @apply badge border-amber-500/30 bg-amber-500/10 text-amber-300;
+    @apply border-amber-500/30 bg-amber-500/10 text-amber-300;
   }
 
   .badge-danger {
-    @apply badge border-red-500/35 bg-red-500/10 text-red-400;
+    @apply border-red-500/35 bg-red-500/10 text-red-400;
   }
 
   .badge-info {
-    @apply badge border-sky-500/30 bg-sky-500/10 text-sky-300;
+    @apply border-sky-500/30 bg-sky-500/10 text-sky-300;
   }
 
   .badge-neutral {
-    @apply badge border-border bg-secondary text-muted-foreground;
+    @apply border-border bg-secondary text-muted-foreground;
   }
 
   .badge-primary {
-    @apply badge border-primary/30 bg-primary/10 text-primary;
+    @apply border-primary/30 bg-primary/10 text-primary;
   }
 
   .table-shell {
