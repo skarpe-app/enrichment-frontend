@@ -69,15 +69,22 @@ export function useConfirmMapping() {
   });
 }
 
-export function useContacts(listId: string | undefined, page = 1, pageSize = 50, search?: string) {
+export function useContacts(
+  listId: string | undefined,
+  page = 1,
+  pageSize = 50,
+  search?: string,
+  status?: string,
+) {
   const params = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
   });
   if (search) params.set('q', search);
+  if (status) params.set('status', status);
 
   return useQuery({
-    queryKey: ['contacts', listId, page, pageSize, search],
+    queryKey: ['contacts', listId, page, pageSize, search, status],
     queryFn: () =>
       apiFetch<PaginatedResponse<import('@/types/api').ContactRow>>(
         `/api/lists/${listId}/contacts?${params}`

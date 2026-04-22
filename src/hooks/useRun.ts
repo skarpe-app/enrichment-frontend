@@ -1,13 +1,25 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useRef } from 'react';
 import { apiFetch } from '../lib/api';
 import type { RunProgress, CreateRunRequest } from '@/types/api';
 
+/**
+ * Polling hook for run progress.
+ * - sinceId is held in a ref, so changing it does NOT invalidate the cache key (no unmount).
+ * - placeholderData keeps showing the old data while refetching.
+ */
 export function useRunProgress(runId: string | undefined, sinceId: number | null) {
-  const params = sinceId ? `?sinceId=${sinceId}` : '';
+  const sinceRef = useRef<number | null>(sinceId);
+  sinceRef.current = sinceId;
+
   return useQuery({
-    queryKey: ['run-progress', runId, sinceId],
-    queryFn: () => apiFetch<RunProgress>(`/api/runs/${runId}/progress${params}`),
+    queryKey: ['run-progress', runId],
+    queryFn: () => {
+      const params = sinceRef.current ? `?sinceId=${sinceRef.current}` : '';
+      return apiFetch<RunProgress>(`/api/runs/${runId}/progress${params}`);
+    },
     enabled: !!runId,
+    placeholderData: keepPreviousData,
     refetchInterval: (query) => {
       const status = query.state.data?.run.status;
       if (!status) return 2000;

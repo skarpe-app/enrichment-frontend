@@ -43,7 +43,8 @@ export function ListDetailPage() {
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [showRunConfig, setShowRunConfig] = useState(false);
 
-  const { data: contactsData, isLoading: contactsLoading } = useContacts(id, page, 100, search);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const { data: contactsData, isLoading: contactsLoading } = useContacts(id, page, 100, search, statusFilter || undefined);
   const createRun = useCreateRun(id ?? '');
 
   const { data: settings } = useQuery({
@@ -209,8 +210,30 @@ export function ListDetailPage() {
           </form>
         )}
 
+        {tab === 'contacts' && (
+          <select
+            value={statusFilter}
+            onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }}
+            className="input input-sm max-w-48"
+          >
+            <option value="">All statuses</option>
+            <option value="not_run">Not enriched yet</option>
+            <option value="completed">Completed</option>
+            <option value="in_progress">In progress</option>
+            <option value="failed">Failed</option>
+            <option value="skipped">Skipped</option>
+          </select>
+        )}
+
         <span className="chip">{contactsData?.pagination.totalItems.toLocaleString() ?? list.importedCount.toLocaleString()} records</span>
+        {tab === 'contacts' && list.enrichedCount != null && (
+          <span className="chip">
+            <span className="text-emerald-400">{list.enrichedCount.toLocaleString()}</span>
+            <span className="text-muted-foreground/60">/{list.importedCount.toLocaleString()} enriched</span>
+          </span>
+        )}
         {search && <span className="chip">Search: {search}</span>}
+        {statusFilter && <span className="chip">Status: {statusFilter.replace('_', ' ')}</span>}
         {latestRun && <StatusBadge status={latestRun.status} />}
       </div>
 

@@ -71,6 +71,7 @@ export interface ListSummary {
   errorMessage: string | null;
   createdAt: string;
   updatedAt: string;
+  enrichedCount?: number;
 }
 
 export interface ListDetail extends ListSummary {

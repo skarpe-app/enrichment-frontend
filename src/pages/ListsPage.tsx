@@ -88,6 +88,7 @@ export function ListsPage() {
                       <th>Lead List</th>
                       <th>Status</th>
                       <th className="text-right">Imported</th>
+                      <th className="text-right">Enriched</th>
                       <th className="text-right">Rejected</th>
                       <th className="text-right">Duplicates</th>
                       <th>Created</th>
@@ -116,6 +117,18 @@ export function ListsPage() {
                           <StatusBadge status={list.status} />
                         </td>
                         <td className="text-right font-mono">{list.importedCount.toLocaleString()}</td>
+                        <td className="text-right font-mono">
+                          {list.enrichedCount != null && list.importedCount > 0 ? (
+                            <span className="text-emerald-400">
+                              {list.enrichedCount.toLocaleString()}
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                ({Math.round((list.enrichedCount / list.importedCount) * 100)}%)
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">0</span>
+                          )}
+                        </td>
                         <td className="text-right font-mono text-muted-foreground">{list.rejectedCount.toLocaleString()}</td>
                         <td className="text-right font-mono text-muted-foreground">{list.duplicateCount.toLocaleString()}</td>
                         <td className="text-sm text-muted-foreground">

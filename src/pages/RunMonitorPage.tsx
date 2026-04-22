@@ -93,7 +93,7 @@ export function RunMonitorPage() {
               Resume
             </button>
           )}
-          {(isTerminal || isStopped) && run.failedItems > 0 && (
+          {run.failedItems > 0 && run.status !== 'queuing' && (
             <button onClick={() => retryItems.mutate({ filter: { status: 'failed' } })} disabled={retryItems.isPending} className="btn-outline btn-md">
               <RotateCcw className="h-4 w-4" />
               Retry Failed ({run.failedItems})
