@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Database,
   Download,
+  ExternalLink,
   Loader2,
   Mail,
   Play,
@@ -286,16 +287,22 @@ export function ListDetailPage() {
                           <tr key={contact.id}>
                             <td className="font-mono text-xs text-muted-foreground">#{contact.rowIndex}</td>
                             <td>
-                              <div className="max-w-48 truncate font-semibold">{list.name}</div>
+                              <div className="max-w-48 truncate font-semibold" title={list.name}>{list.name}</div>
                               <div className="mt-1 font-mono text-xs text-muted-foreground">list_{list.id.slice(0, 8)}</div>
                             </td>
-                            <td className="max-w-64 truncate font-semibold">{contact.email}</td>
-                            <td className="max-w-40 truncate text-muted-foreground">{contact.firstName ?? firstNameFromContact(contact)}</td>
-                            <td className="max-w-40 truncate text-muted-foreground">{contact.lastName ?? lastNameFromContact(contact)}</td>
-                            <td className="max-w-64 truncate font-mono text-sm text-primary">{website || '-'}</td>
+                            <td className="max-w-64 truncate font-semibold" title={contact.email}>{contact.email}</td>
+                            <td className="max-w-40 truncate text-muted-foreground" title={contact.firstName ?? firstNameFromContact(contact) ?? ''}>{contact.firstName ?? firstNameFromContact(contact)}</td>
+                            <td className="max-w-40 truncate text-muted-foreground" title={contact.lastName ?? lastNameFromContact(contact) ?? ''}>{contact.lastName ?? lastNameFromContact(contact)}</td>
+                            <td className="max-w-64 font-mono text-sm">
+                              {website ? (
+                                <WebsiteCell url={website} />
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </td>
                             <td>
                               {contact.industry ? (
-                                <div className="max-w-72">
+                                <div className="max-w-72" title={`${contact.industry}${contact.subIndustry ? ` — ${contact.subIndustry}` : ''}${contact.reasoning ? `\n\n${contact.reasoning}` : ''}`}>
                                   <div className="truncate text-sm font-semibold text-foreground">{contact.industry}</div>
                                   {contact.subIndustry && <div className="mt-1 truncate text-xs text-muted-foreground">{contact.subIndustry}</div>}
                                 </div>
@@ -320,7 +327,8 @@ export function ListDetailPage() {
                               {contact.latestStatus ? <StatusBadge status={contact.latestStatus} /> : <span className="text-xs text-muted-foreground">-</span>}
                             </td>
                             {customFields.map((field) => (
-                              <td key={field.id} className="max-w-48 truncate text-sm text-muted-foreground">
+                              <td key={field.id} className="max-w-48 truncate text-sm text-muted-foreground"
+                                title={String(formatCustomValue(contact.customFields?.[field.fieldKey]) ?? '')}>
                                 {formatCustomValue(contact.customFields?.[field.fieldKey])}
                               </td>
                             ))}
@@ -496,4 +504,27 @@ function formatDateTime(value: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function WebsiteCell({ url }: { url: string }) {
+  // Normalize to a valid href (add protocol if missing)
+  const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  // Display without protocol for compactness
+  const display = url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <span className="truncate text-primary" title={href}>{display}</span>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+        title="Open in new tab"
+        aria-label="Open website in new tab"
+      >
+        <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+    </div>
+  );
 }
