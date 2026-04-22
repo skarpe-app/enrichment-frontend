@@ -49,7 +49,14 @@ async function fetchWithAuth(path: string, options: RequestInit): Promise<Respon
     headers.set('Authorization', `Bearer ${session.access_token}`);
   }
 
-  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+  // Only set Content-Type when we actually have a body to send.
+  // Empty POSTs (e.g. /resume, /stop, /test) must NOT set JSON content-type —
+  // Fastify rejects empty JSON bodies with 400.
+  if (
+    !headers.has('Content-Type') &&
+    options.body != null &&
+    !(options.body instanceof FormData)
+  ) {
     headers.set('Content-Type', 'application/json');
   }
 
