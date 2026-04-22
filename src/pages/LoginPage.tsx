@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Database, Key, Loader2, Mail } from 'lucide-react';
+import { FloatingField } from '../components/ui/FloatingField';
 
 export function LoginPage() {
   const { isAuthenticated } = useAuth();
@@ -16,8 +17,8 @@ export function LoginPage() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleLogin(event: FormEvent) {
+    event.preventDefault();
     setError(null);
     setLoading(true);
 
@@ -41,91 +42,100 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md animate-in">
-        {/* Branding */}
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
-            <Sparkles className="h-6 w-6 text-white" />
+    <div className="flex min-h-screen bg-background text-foreground">
+      <section className="hidden w-[42vw] min-w-[28rem] border-r border-border bg-card p-10 lg:flex lg:flex-col lg:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
+            <Database className="h-5 w-5" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back</h1>
-          <p className="text-sm text-muted-foreground">Sign in to your enrichment workspace</p>
+          <div>
+            <div className="text-lg font-black tracking-tight">Quantum Scaling</div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Contact Enrichment</div>
+          </div>
         </div>
+        <div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Secure Workspace</div>
+          <h1 className="mt-3 max-w-lg text-4xl font-black tracking-tight">Classify contacts, monitor runs, and export enriched lists.</h1>
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          {['Contacts', 'Pipeline', 'Exports'].map((item) => (
+            <div key={item} className="rounded-md border border-border bg-background px-3 py-2 font-semibold text-muted-foreground">
+              {item}
+            </div>
+          ))}
+        </div>
+      </section>
 
-        {/* Card */}
-        <div className="card p-7 shadow-xl shadow-black/20">
-          <form onSubmit={handleLogin} className="space-y-5">
-            {error && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-sm text-destructive animate-in">
-                {error}
+      <main className="flex flex-1 items-center justify-center p-6">
+        <div className="w-full max-w-md animate-in">
+          <div className="mb-6 lg:hidden">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
+                <Database className="h-5 w-5" />
               </div>
-            )}
-            {resetSent && (
-              <div className="rounded-lg bg-primary/10 border border-primary/20 px-3 py-2.5 text-sm text-primary animate-in">
-                Password reset link sent. Check your inbox.
+              <div>
+                <div className="text-lg font-black tracking-tight">Quantum Scaling</div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Contact Enrichment</div>
               </div>
-            )}
+            </div>
+          </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
-                Email address
-              </label>
-              <input
-                id="email"
+          <div className="panel overflow-hidden">
+            <div className="border-b border-border px-6 py-5">
+              <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Authentication</div>
+              <h1 className="mt-1 text-2xl font-black tracking-tight">Sign In</h1>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4 p-6">
+              {error && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
+              {resetSent && <div className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">Password reset link sent. Check your inbox.</div>}
+
+              <FloatingField
+                label="Email address"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 required
-                className="input"
-                placeholder="you@company.com"
                 autoComplete="email"
+                disabled={loading}
+                leading={<Mail className="h-4 w-4" />}
               />
-            </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
-                  Password
-                </label>
-                <button
-                  type="button"
-                  onClick={handleResetPassword}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Forgot password?
-                </button>
-              </div>
-              <input
-                id="password"
+              <FloatingField
+                label="Password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 required
-                className="input"
                 autoComplete="current-password"
+                disabled={loading}
+                leading={<Key className="h-4 w-4" />}
+                trailing={
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Forgot?
+                  </button>
+                }
               />
-            </div>
 
-            <button type="submit" disabled={loading} className="btn-primary btn-md w-full">
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
-              )}
-            </button>
-          </form>
+              <button type="submit" disabled={loading} className="btn-primary btn-md w-full">
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                Sign In
+              </button>
+            </form>
+          </div>
+
+          <p className="mt-5 text-center text-sm text-muted-foreground">
+            Need an account?{' '}
+            <Link to="/signup" className="font-semibold text-foreground transition-colors hover:text-primary">
+              Create one
+            </Link>
+          </p>
         </div>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Don't have an account?{' '}
-          <Link to="/signup" className="font-medium text-foreground hover:text-primary transition-colors">
-            Create one
-          </Link>
-        </p>
-      </div>
+      </main>
     </div>
   );
 }

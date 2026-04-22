@@ -1,120 +1,144 @@
 import { NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import type { ComponentType } from 'react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import type { SettingsResponse } from '@/types/api';
 import {
-  LayoutDashboard,
-  List,
-  Upload,
-  Settings,
-  Globe,
+  Database,
+  Gauge,
+  Globe2,
+  LogOut,
   Radio,
-  Sparkles,
+  Settings,
+  Upload,
+  UsersRound,
+  Zap,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/lists', label: 'Contact Lists', icon: List },
+const primaryNav = [
+  { to: '/lists', label: 'Contacts', icon: UsersRound },
+  { to: '/dashboard', label: 'Pipeline Monitor', icon: Zap },
   { to: '/import', label: 'Import CSV', icon: Upload },
+];
+
+const utilityNav = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
-const adminItems = [
-  { to: '/admin/domains', label: 'Domain Cache', icon: Globe },
-  { to: '/admin/proxies', label: 'Proxy Management', icon: Radio },
+const adminNav = [
+  { to: '/admin/domains', label: 'Domain Cache', icon: Globe2 },
+  { to: '/admin/proxies', label: 'Proxy Performance', icon: Radio },
 ];
 
 export function Sidebar() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, signOut } = useAuth();
   const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: () => apiFetch<SettingsResponse>('/api/settings'),
     enabled: isAuthenticated,
   });
-  const isAdmin = settings?.profile.role === 'ADMIN';
 
-  const initials = (settings?.profile.name || settings?.profile.email || 'U')
-    .split(/\s|@/)
+  const isAdmin = settings?.profile.role === 'ADMIN';
+  const profileName = settings?.profile.name || user?.email?.split('@')[0] || 'Workspace';
+  const initials = (settings?.profile.name || settings?.profile.email || user?.email || 'QS')
+    .split(/\s|@|\./)
+    .filter(Boolean)
     .slice(0, 2)
-    .map((s) => s[0]?.toUpperCase())
+    .map((part) => part[0]?.toUpperCase())
     .join('');
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-border bg-card/30 backdrop-blur-xl">
-      {/* Branding */}
+    <aside className="flex h-full w-72 shrink-0 flex-col border-r border-border bg-card">
       <div className="flex h-16 items-center gap-3 border-b border-border px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
-          <Sparkles className="h-5 w-5 text-white" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
+          <Database className="h-5 w-5" />
         </div>
-        <div>
-          <div className="text-sm font-semibold text-foreground tracking-tight">Enrichment</div>
-          <div className="text-xs text-muted-foreground">AI Classification</div>
+        <div className="min-w-0">
+          <div className="truncate text-base font-black tracking-tight text-foreground">Quantum Scaling</div>
+          <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Contact Enrichment
+          </div>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        <div className="mb-1 px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-          Workspace
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+        <NavGroup items={primaryNav} />
+
+        <div className="mt-6 border-t border-border pt-4">
+          <NavGroup items={utilityNav} />
         </div>
-        {navItems.map((item) => (
-          <NavItem key={item.to} {...item} />
-        ))}
 
         {isAdmin && (
-          <>
-            <div className="mt-6 mb-1 px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          <div className="mt-6 border-t border-border pt-4">
+            <div className="mb-2 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Admin
             </div>
-            {adminItems.map((item) => (
-              <NavItem key={item.to} {...item} />
-            ))}
-          </>
+            <NavGroup items={adminNav} />
+          </div>
         )}
       </nav>
 
-      {/* User card */}
       <div className="border-t border-border p-3">
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/80 to-purple-600/80 text-xs font-semibold text-white shadow-sm">
+        <div className="mb-2 flex items-center gap-3 rounded-md border border-border bg-background p-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-accent text-xs font-black text-foreground">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium text-foreground">
-              {settings?.profile.name || user?.email?.split('@')[0]}
-            </div>
-            <div className="truncate text-xs text-muted-foreground">
-              {user?.email}
-            </div>
+            <div className="truncate text-sm font-semibold text-foreground">{profileName}</div>
+            <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
           </div>
+        </div>
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <NavLink to="/dashboard" className="btn-ghost btn-sm justify-start">
+            <Gauge className="h-4 w-4" />
+            Overview
+          </NavLink>
+          <button onClick={signOut} className="icon-btn" title="Sign out" aria-label="Sign out">
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </aside>
   );
 }
 
-function NavItem({ to, label, icon: Icon }: { to: string; label: string; icon: any }) {
+function NavGroup({ items }: { items: Array<{ to: string; label: string; icon: ComponentType<{ className?: string }> }> }) {
+  return (
+    <div className="space-y-1">
+      {items.map((item) => (
+        <NavItem key={item.to} {...item} />
+      ))}
+    </div>
+  );
+}
+
+function NavItem({
+  to,
+  label,
+  icon: Icon,
+}: {
+  to: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+}) {
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
         cn(
-          'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
+          'group flex h-10 items-center gap-3 rounded-md px-3 text-sm font-bold transition-colors',
           isActive
-            ? 'bg-primary/10 text-foreground'
-            : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+            ? 'bg-accent text-primary'
+            : 'text-muted-foreground hover:bg-accent/70 hover:text-foreground'
         )
       }
     >
       {({ isActive }) => (
         <>
-          {isActive && (
-            <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
-          )}
-          <Icon className={cn('h-[18px] w-[18px] transition-colors', isActive ? 'text-primary' : '')} />
-          <span>{label}</span>
+          <Icon className={cn('h-5 w-5', isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
+          <span className="truncate">{label}</span>
         </>
       )}
     </NavLink>

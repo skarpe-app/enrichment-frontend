@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Sparkles, Mail, Loader2 } from 'lucide-react';
+import { Database, Key, Loader2, Mail, User } from 'lucide-react';
+import { FloatingField } from '../components/ui/FloatingField';
 
 export function SignupPage() {
   const { isAuthenticated } = useAuth();
@@ -17,8 +18,8 @@ export function SignupPage() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSignup(event: FormEvent) {
+    event.preventDefault();
     setError(null);
     setLoading(true);
 
@@ -38,115 +39,95 @@ export function SignupPage() {
 
   if (checkInbox) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md animate-in">
-          <div className="card p-8 text-center shadow-xl shadow-black/20">
-            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
-              <Mail className="h-6 w-6 text-primary" />
-            </div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Check your inbox</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              We sent a confirmation link to
-            </p>
-            <p className="mt-1 text-sm font-medium text-foreground">{email}</p>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Click the link to activate your account.
-            </p>
-            <Link to="/login" className="btn-outline btn-md mt-6 w-full">
-              Back to sign in
-            </Link>
+      <AuthFrame>
+        <div className="panel p-8 text-center animate-in">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
+            <Mail className="h-7 w-7" />
           </div>
+          <h1 className="mt-5 text-xl font-black tracking-tight text-foreground">Check your inbox</h1>
+          <p className="mt-2 text-sm text-muted-foreground">We sent a confirmation link to</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{email}</p>
+          <Link to="/login" className="btn-outline btn-md mt-6 w-full">Back to Sign In</Link>
         </div>
-      </div>
+      </AuthFrame>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md animate-in">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
-            <Sparkles className="h-6 w-6 text-white" />
+    <AuthFrame>
+      <div className="panel overflow-hidden animate-in">
+        <div className="border-b border-border px-6 py-5">
+          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Authentication</div>
+          <h1 className="mt-1 text-2xl font-black tracking-tight">Create Account</h1>
+        </div>
+
+        <form onSubmit={handleSignup} className="space-y-4 p-6">
+          {error && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
+
+          <FloatingField
+            label="Full name"
+            type="text"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            autoComplete="name"
+            disabled={loading}
+            leading={<User className="h-4 w-4" />}
+          />
+
+          <FloatingField
+            label="Email address"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+            autoComplete="email"
+            disabled={loading}
+            leading={<Mail className="h-4 w-4" />}
+          />
+
+          <FloatingField
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            minLength={6}
+            autoComplete="new-password"
+            disabled={loading}
+            leading={<Key className="h-4 w-4" />}
+          />
+
+          <button type="submit" disabled={loading} className="btn-primary btn-md w-full">
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            Create Account
+          </button>
+        </form>
+      </div>
+
+      <p className="mt-5 text-center text-sm text-muted-foreground">
+        Already have an account?{' '}
+        <Link to="/login" className="font-semibold text-foreground transition-colors hover:text-primary">
+          Sign in
+        </Link>
+      </p>
+    </AuthFrame>
+  );
+}
+
+function AuthFrame({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+      <div className="w-full max-w-md">
+        <div className="mb-6 flex items-center justify-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
+            <Database className="h-5 w-5" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Create your account</h1>
-          <p className="text-sm text-muted-foreground">Start enriching contacts in minutes</p>
+          <div>
+            <div className="text-lg font-black tracking-tight">Quantum Scaling</div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Contact Enrichment</div>
+          </div>
         </div>
-
-        <div className="card p-7 shadow-xl shadow-black/20">
-          <form onSubmit={handleSignup} className="space-y-5">
-            {error && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-sm text-destructive animate-in">
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <label htmlFor="name" className="text-xs font-medium text-muted-foreground">
-                Full name <span className="text-muted-foreground/50">(optional)</span>
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="input"
-                placeholder="Jane Doe"
-                autoComplete="name"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
-                Email address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="input"
-                placeholder="you@company.com"
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="input"
-                placeholder="At least 6 characters"
-                autoComplete="new-password"
-              />
-            </div>
-
-            <button type="submit" disabled={loading} className="btn-primary btn-md w-full">
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Create account'
-              )}
-            </button>
-          </form>
-        </div>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link to="/login" className="font-medium text-foreground hover:text-primary transition-colors">
-            Sign in
-          </Link>
-        </p>
+        {children}
       </div>
     </div>
   );

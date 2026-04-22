@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api';
 import type { AdminProxyDto } from '@/types/api';
-import { Plus, Trash2, TestTube, Loader2, Radio, Check, X } from 'lucide-react';
+import { Check, Loader2, Plus, Radio, TestTube, Trash2, X } from 'lucide-react';
 
 export function ProxyDashboardPage() {
   const queryClient = useQueryClient();
@@ -19,7 +19,8 @@ export function ProxyDashboardPage() {
     mutationFn: (body: unknown) => apiFetch('/api/admin/proxies', { method: 'POST', body: JSON.stringify(body) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'proxies'] });
-      setShowAdd(false); setForm({ name: '', host: '', port: '', protocol: 'http' });
+      setShowAdd(false);
+      setForm({ name: '', host: '', port: '', protocol: 'http' });
     },
   });
 
@@ -31,120 +32,133 @@ export function ProxyDashboardPage() {
   const testProxy = useMutation({
     mutationFn: async (id: string) => {
       const result = await apiFetch<{ success: boolean; responseMs?: number }>(`/api/admin/proxies/${id}/test`, { method: 'POST' });
-      setTestResult((prev) => ({ ...prev, [id]: result }));
+      setTestResult((previous) => ({ ...previous, [id]: result }));
       return result;
     },
   });
 
-  if (isLoading) return <div className="flex h-full items-center justify-center p-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center p-10">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const proxies = data?.data ?? [];
 
   return (
-    <div className="p-8 space-y-6 animate-in">
-      <div className="flex items-center justify-between">
+    <div className="min-h-full animate-in">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background px-6 py-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Proxy Management</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Configure custom scraping proxies</p>
+          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Admin</div>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-foreground">Proxy Performance</h1>
         </div>
         <button onClick={() => setShowAdd(true)} className="btn-primary btn-md">
-          <Plus className="h-4 w-4" /> Add Proxy
+          <Plus className="h-4 w-4" />
+          Add Proxy
         </button>
       </div>
 
       {showAdd && (
-        <div className="card p-4 space-y-3 animate-in">
-          <div className="grid grid-cols-4 gap-3">
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" className="input input-sm" />
-            <input value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })} placeholder="Host" className="input input-sm" />
-            <input value={form.port} onChange={(e) => setForm({ ...form, port: e.target.value })} placeholder="Port" type="number" className="input input-sm" />
-            <select value={form.protocol} onChange={(e) => setForm({ ...form, protocol: e.target.value })} className="input input-sm">
+        <div className="border-b border-border bg-card px-6 py-4">
+          <div className="grid gap-3 lg:grid-cols-[1fr_1fr_9rem_10rem_auto]">
+            <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Name" className="input input-sm" />
+            <input value={form.host} onChange={(event) => setForm({ ...form, host: event.target.value })} placeholder="Host" className="input input-sm" />
+            <input value={form.port} onChange={(event) => setForm({ ...form, port: event.target.value })} placeholder="Port" type="number" className="input input-sm" />
+            <select value={form.protocol} onChange={(event) => setForm({ ...form, protocol: event.target.value })} className="input input-sm">
               <option value="http">HTTP</option>
               <option value="https">HTTPS</option>
               <option value="socks5">SOCKS5</option>
             </select>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => createProxy.mutate({ ...form, port: parseInt(form.port) })} disabled={!form.name || !form.host || !form.port} className="btn-primary btn-sm">
-              <Check className="h-3.5 w-3.5" /> Create
-            </button>
-            <button onClick={() => setShowAdd(false)} className="btn-outline btn-sm">Cancel</button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => createProxy.mutate({ ...form, port: parseInt(form.port) })}
+                disabled={!form.name || !form.host || !form.port || createProxy.isPending}
+                className="btn-primary btn-sm"
+              >
+                <Check className="h-3.5 w-3.5" />
+                Create
+              </button>
+              <button onClick={() => setShowAdd(false)} className="btn-outline btn-sm">Cancel</button>
+            </div>
           </div>
         </div>
       )}
 
-      {proxies.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Radio className="mx-auto h-10 w-10 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">No proxies configured</p>
-          <p className="text-xs text-muted-foreground mt-1">The enrichment pipeline will fall back to free + premium adapters</p>
-        </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Endpoint</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Success</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Avg ms</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Requests</th>
-                <th className="px-5 py-3 w-24 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"><span className="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {proxies.map((proxy) => {
-                const test = testResult[proxy.id];
-                const successRate = proxy.totalRequests > 0 ? ((proxy.successCount / proxy.totalRequests) * 100).toFixed(0) : '—';
-                return (
-                  <tr key={proxy.id} className="table-row-hover">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-                          <Radio className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <span className="text-sm font-medium text-foreground">{proxy.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm font-mono text-muted-foreground">{proxy.protocol}://{proxy.host}:{proxy.port}</td>
-                    <td className="px-5 py-3.5">
-                      {proxy.isActive ? (
-                        <span className="badge-success">Active</span>
-                      ) : (
-                        <span className="badge-neutral">Disabled</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 text-right text-sm text-foreground">{successRate}%</td>
-                    <td className="px-5 py-3.5 text-right text-sm text-muted-foreground">{proxy.avgResponseMs}ms</td>
-                    <td className="px-5 py-3.5 text-right text-sm text-muted-foreground">{proxy.totalRequests}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex justify-end gap-1">
-                        <button onClick={() => testProxy.mutate(proxy.id)} className="btn-ghost btn-sm" title="Test connection">
-                          {testProxy.isPending && testProxy.variables === proxy.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : test ? (
-                            test.success ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <X className="h-3.5 w-3.5 text-red-400" />
-                          ) : (
-                            <TestTube className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => { if (confirm(`Delete "${proxy.name}"?`)) deleteProxy.mutate(proxy.id); }}
-                          className="p-1.5 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
+      <div className="p-6">
+        {proxies.length === 0 ? (
+          <div className="empty-state">
+            <Radio className="h-10 w-10 text-muted-foreground" />
+            <h3 className="mt-4 text-sm font-black text-foreground">No proxies configured</h3>
+            <p className="mt-1 text-sm text-muted-foreground">The pipeline will use configured adapter fallbacks.</p>
+          </div>
+        ) : (
+          <div className="table-shell">
+            <div className="table-scroll max-h-[calc(100vh-13rem)]">
+              <table className="data-table min-w-[1050px]">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Endpoint</th>
+                    <th>Status</th>
+                    <th className="text-right">Success</th>
+                    <th className="text-right">Avg ms</th>
+                    <th className="text-right">Requests</th>
+                    <th className="text-right">Actions</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                </thead>
+                <tbody>
+                  {proxies.map((proxy) => {
+                    const test = testResult[proxy.id];
+                    const successRate = proxy.totalRequests > 0 ? ((proxy.successCount / proxy.totalRequests) * 100).toFixed(0) : '-';
+                    return (
+                      <tr key={proxy.id}>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
+                              <Radio className="h-4 w-4" />
+                            </div>
+                            <span className="font-semibold text-foreground">{proxy.name}</span>
+                          </div>
+                        </td>
+                        <td className="font-mono text-sm text-muted-foreground">{proxy.protocol}://{proxy.host}:{proxy.port}</td>
+                        <td>{proxy.isActive ? <span className="badge-success">Active</span> : <span className="badge-neutral">Disabled</span>}</td>
+                        <td className="text-right font-mono">{successRate}%</td>
+                        <td className="text-right font-mono text-muted-foreground">{proxy.avgResponseMs}ms</td>
+                        <td className="text-right font-mono text-muted-foreground">{proxy.totalRequests.toLocaleString()}</td>
+                        <td>
+                          <div className="flex justify-end gap-1">
+                            <button onClick={() => testProxy.mutate(proxy.id)} className="icon-btn" title="Test connection" aria-label={`Test ${proxy.name}`}>
+                              {testProxy.isPending && testProxy.variables === proxy.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : test ? (
+                                test.success ? <Check className="h-4 w-4 text-primary" /> : <X className="h-4 w-4 text-red-400" />
+                              ) : (
+                                <TestTube className="h-4 w-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Delete "${proxy.name}"?`)) deleteProxy.mutate(proxy.id);
+                              }}
+                              className="icon-btn hover:text-destructive"
+                              title="Delete proxy"
+                              aria-label={`Delete ${proxy.name}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -13,3 +13,9 @@ dist/
 # IDE
 .vscode/
 .idea/
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
+# Design briefs / mockups (kept locally, not pushed to prod repo)
+skarpe/
